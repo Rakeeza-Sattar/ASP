@@ -6,29 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('home_id')->constrained()->onDelete('cascade');
-            $table->foreignId('officer_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->dateTime('scheduled_at');
-            $table->dateTime('started_at')->nullable();
-            $table->dateTime('completed_at')->nullable();
-            $table->enum('status', ['scheduled', 'in_progress', 'completed', 'cancelled', 'rescheduled'])
-                ->default('scheduled');
+            $table->foreignId('assigned_officer_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->datetime('scheduled_at');
+            $table->datetime('completed_at')->nullable();
+            $table->enum('status', ['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'])->default('scheduled');
             $table->text('special_instructions')->nullable();
             $table->text('officer_notes')->nullable();
-            $table->decimal('estimated_duration', 3, 1)->default(2.0); // hours
-            $table->json('preparation_checklist')->nullable();
+            $table->integer('duration_minutes')->nullable();
             $table->timestamps();
 
-            $table->index(['officer_id', 'scheduled_at']);
-            $table->index(['status', 'scheduled_at']);
+            $table->index(['scheduled_at', 'status']);
+            $table->index(['assigned_officer_id', 'status']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('appointments');
     }

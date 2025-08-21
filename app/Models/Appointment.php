@@ -4,27 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Appointment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'home_id', 'officer_id', 'scheduled_at', 'started_at', 'completed_at',
-        'status', 'special_instructions', 'officer_notes', 'estimated_duration',
-        'preparation_checklist'
+        'home_id', 'assigned_officer_id', 'scheduled_at', 'completed_at',
+        'status', 'special_instructions', 'officer_notes', 'duration_minutes'
     ];
 
     protected $casts = [
         'scheduled_at' => 'datetime',
-        'started_at' => 'datetime',
         'completed_at' => 'datetime',
-        'estimated_duration' => 'decimal:1',
-        'preparation_checklist' => 'array',
+        'duration_minutes' => 'integer',
     ];
 
     /**
-     * Home for this appointment
+     * Home where appointment is scheduled
      */
     public function home()
     {
@@ -32,19 +30,27 @@ class Appointment extends Model
     }
 
     /**
-     * Assigned officer
+     * Homeowner (through home relationship)
      */
-    public function officer()
+    public function homeowner()
     {
-        return $this->belongsTo(User::class, 'officer_id');
+        return $this->home->owner();
     }
 
     /**
-     * Related payment
+     * Assigned officer
      */
-    public function payment()
+    public function assignedOfficer()
     {
-        return $this->hasOne(Payment::class);
+        return $this->belongsTo(User::class, 'assigned_officer_id');
+    }
+
+    /**
+     * Items documented during this appointment
+     */
+    public function items()
+    {
+        return $this->hasMany(Item::class);
     }
 
     /**
@@ -56,37 +62,34 @@ class Appointment extends Model
     }
 
     /**
-     * Check if appointment is scheduled
+     * Check if appointment is upcoming
      */
-    public function isScheduled()
+    public function isUpcoming()
     {
-        return $this->status === 'scheduled';
+        return $this->status === 'scheduled' && $this->scheduled_at > now();
     }
 
     /**
-     * Check if appointment is in progress
+     * Check if appointment is today
      */
-    public function isInProgress()
+    public function isToday()
     {
-        return $this->status === 'in_progress';
+        return $this->scheduled_at->isToday();
     }
 
     /**
-     * Check if appointment is completed
+     * Get formatted appointment time
      */
-    public function isCompleted()
+    public function getFormattedTimeAttribute()
     {
-        return $this->status === 'completed';
+        return $this->scheduled_at->format('g:i A');
     }
 
     /**
-     * Get duration in hours
+     * Get formatted appointment date
      */
-    public function getActualDurationAttribute()
+    public function getFormattedDateAttribute()
     {
-        if ($this->started_at && $this->completed_at) {
-            return $this->started_at->diffInHours($this->completed_at, true);
-        }
-        return null;
+        return $this->scheduled_at->format('l, F j, Y');
     }
 }

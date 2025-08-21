@@ -4,6 +4,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\CheckoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,7 +13,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    
+
     if ($user->hasRole('admin')) {
         return redirect()->route('admin.dashboard');
     } elseif ($user->hasRole('officer')) {
@@ -20,9 +21,14 @@ Route::get('/dashboard', function () {
     } elseif ($user->hasRole('homeowner')) {
         return redirect()->route('homeowner.dashboard');
     }
-    
+
     return redirect()->route('home');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Checkout routes (public)
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+Route::get('/checkout/confirmation', [CheckoutController::class, 'confirmation'])->name('checkout.confirmation');
 
 // Payment routes
 Route::middleware('auth')->group(function () {
@@ -46,5 +52,3 @@ Route::post('/appointment/store', [HomeController::class, 'storeAppointment'])->
 Route::get('/appointment/confirmation', [HomeController::class, 'appointmentConfirmation'])->name('appointment.confirmation');
 
 require __DIR__.'/auth.php';
-
-
