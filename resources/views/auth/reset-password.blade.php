@@ -1,12 +1,12 @@
 
 @extends('layouts.app')
 
-@section('title', 'Login - Home Security Portal')
+@section('title', 'Reset Password - Home Security Portal')
 
 @section('content')
 <div class="authentication-wrapper authentication-basic container-p-y">
     <div class="authentication-inner">
-        <!-- Login -->
+        <!-- Reset Password -->
         <div class="card">
             <div class="card-body">
                 <!-- Logo -->
@@ -20,18 +20,14 @@
                 </div>
                 <!-- /Logo -->
                 
-                <h4 class="mb-2">Welcome back! 👋</h4>
-                <p class="mb-4">Please sign-in to your account and start the adventure</p>
+                <h4 class="mb-2">Reset Password 🔒</h4>
+                <p class="mb-4">Your new password must be different from previously used passwords</p>
 
-                <!-- Session Status -->
-                @if (session('status'))
-                    <div class="alert alert-success mb-3" role="alert">
-                        {{ session('status') }}
-                    </div>
-                @endif
-
-                <form id="formAuthentication" class="mb-3" method="POST" action="{{ route('login') }}">
+                <form id="formAuthentication" class="mb-3" method="POST" action="{{ route('password.store') }}">
                     @csrf
+                    
+                    <!-- Password Reset Token -->
+                    <input type="hidden" name="token" value="{{ $request->route('token') }}">
                     
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
@@ -40,7 +36,7 @@
                             class="form-control @error('email') is-invalid @enderror"
                             id="email"
                             name="email"
-                            value="{{ old('email') }}"
+                            value="{{ old('email', $request->email) }}"
                             placeholder="Enter your email"
                             autofocus
                             required
@@ -53,12 +49,7 @@
                     </div>
                     
                     <div class="mb-3 form-password-toggle">
-                        <div class="d-flex justify-content-between">
-                            <label class="form-label" for="password">Password</label>
-                            <a href="{{ route('password.request') }}">
-                                <small>Forgot Password?</small>
-                            </a>
-                        </div>
+                        <label class="form-label" for="password">New Password</label>
                         <div class="input-group input-group-merge">
                             <input
                                 type="password"
@@ -77,55 +68,34 @@
                             </div>
                         @enderror
                     </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="remember-me" name="remember" />
-                            <label class="form-check-label" for="remember-me"> Remember Me </label>
+
+                    <div class="mb-3 form-password-toggle">
+                        <label class="form-label" for="password_confirmation">Confirm Password</label>
+                        <div class="input-group input-group-merge">
+                            <input
+                                type="password"
+                                id="password_confirmation"
+                                class="form-control"
+                                name="password_confirmation"
+                                placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
+                                required
+                            />
+                            <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
-                    </div>
+                    <button class="btn btn-primary d-grid w-100">Set new password</button>
                 </form>
 
-                <p class="text-center">
-                    <span>New on our platform?</span>
-                    <a href="{{ route('checkout.index') }}">
-                        <span>Schedule a Free Audit</span>
+                <div class="text-center">
+                    <a href="{{ route('login') }}" class="d-flex align-items-center justify-content-center">
+                        <i class="bx bx-chevron-left scaleX-n1-rtl bx-sm"></i>
+                        Back to login
                     </a>
-                </p>
-
-                <!-- Role-based login help -->
-                <div class="mt-4">
-                    <div class="text-center">
-                        <small class="text-muted">Login as:</small>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-4 text-center">
-                            <div class="badge bg-label-primary">
-                                <i class="fas fa-home me-1"></i>
-                                Homeowner
-                            </div>
-                        </div>
-                        <div class="col-4 text-center">
-                            <div class="badge bg-label-warning">
-                                <i class="fas fa-user-shield me-1"></i>
-                                Officer
-                            </div>
-                        </div>
-                        <div class="col-4 text-center">
-                            <div class="badge bg-label-danger">
-                                <i class="fas fa-user-cog me-1"></i>
-                                Admin
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
-        <!-- /Login -->
+        <!-- /Reset Password -->
     </div>
 </div>
 @endsection
@@ -152,15 +122,6 @@
     border-radius: 10px;
 }
 
-.app-brand-logo {
-    margin-right: 10px;
-}
-
-.form-password-toggle .input-group-text {
-    background: transparent;
-    border-left: 0;
-}
-
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
@@ -171,23 +132,18 @@
     background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%);
     box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.3);
 }
-
-.badge {
-    font-size: 0.7rem;
-    padding: 0.5em 0.75em;
-}
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Password toggle functionality
-    const passwordToggle = document.querySelector('.form-password-toggle .input-group-text');
-    const passwordInput = document.querySelector('#password');
+    // Password toggle functionality for both password fields
+    const passwordToggles = document.querySelectorAll('.form-password-toggle .input-group-text');
     
-    if (passwordToggle && passwordInput) {
-        passwordToggle.addEventListener('click', function() {
+    passwordToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const passwordInput = this.parentElement.querySelector('input');
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
             
@@ -200,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon.classList.add('bx-show');
             }
         });
-    }
+    });
 });
 </script>
 @endpush

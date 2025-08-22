@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Models\Appointment;
+use App\Mail\AppointmentConfirmation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,10 +16,10 @@ class SendWelcomeEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $user;
-    public $appointment;
+    protected $user;
+    protected $appointment;
 
-    public function __construct(User $user, Appointment $appointment)
+    public function __construct(User $user, Appointment $appointment = null)
     {
         $this->user = $user;
         $this->appointment = $appointment;
@@ -26,8 +27,8 @@ class SendWelcomeEmail implements ShouldQueue
 
     public function handle()
     {
-        Mail::to($this->user->email)->send(
-            new \App\Mail\WelcomeEmail($this->user, $this->appointment)
-        );
+        if ($this->appointment) {
+            Mail::to($this->user->email)->send(new AppointmentConfirmation($this->user, $this->appointment));
+        }
     }
 }

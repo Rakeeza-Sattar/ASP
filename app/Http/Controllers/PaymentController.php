@@ -8,6 +8,8 @@ use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Jobs\SendPaymentConfirmationEmail;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentController extends Controller
 {
@@ -40,8 +42,8 @@ class PaymentController extends Controller
             'payment_type' => 'required|in:one-time,subscription',
             'appointment_id' => 'nullable|exists:appointments,id'
         ]);
-
-        $user = auth()->user();
+        $user = Auth::user();
+        // $user = auth()->user();
         $idempotencyKey = Str::uuid()->toString();
 
         try {
@@ -170,7 +172,7 @@ class PaymentController extends Controller
             // Send confirmation email if completed
             if ($paymentData['status'] === 'COMPLETED') {
                 // Dispatch email job
-                \App\Jobs\SendPaymentConfirmationEmail::dispatch($payment);
+                SendPaymentConfirmationEmail::dispatch($payment);
             }
         }
     }
